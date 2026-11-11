@@ -1,0 +1,41 @@
+{
+    "name": "avatars",
+    "version": "0.1.0",
+    "kernel": "^1.3.3",
+    "solves": "avatar.generation",
+    "type": "module",
+
+    "requires": [],
+
+    "exposes": [
+        "Plugins\\Avatars\\API\\Contracts\\AvatarContract"
+    ],
+
+    "routes": [],
+    "emits": [],
+    "files": [],
+
+    "documentation": "Deterministic initials avatars as SVG — a pure function of a name, with no network, no database, no image library and no font file — plus a guarded fetch for an avatar URL somebody supplied. The same name always gets the same colour, and the text colour is chosen by WCAG contrast rather than fixed, so a palette edit cannot leave unreadable initials behind.",
+
+    "//http-client-is-optional": "Generating initials needs nothing, so declaring http.client as a requirement would make every route that wants an initials avatar load an HTTP client it never calls. The fetcher is bound only when HttpClientPort is already resolvable; a route that wants remoteImage() declares \"requires\": [\"avatar.generation\", \"http.client\"], and calling it without that throws with a message naming exactly that line.",
+
+    "//no-routes-the-fetch-would-be-an-open-proxy": "Appwrite exposes this as GET /avatars/image?url=… — an unauthenticated endpoint that fetches an arbitrary URL and returns the bytes. That is an open proxy: anyone can use the server to reach what it can reach and they cannot — a metadata service, an internal admin panel — and read the answer out of the response. It is also a free bandwidth amplifier. So the capability is a service method and the application decides who may call it.",
+
+    "//the-url-came-from-a-user": "Every outbound default is overridden. block_private => true, because the client allows private ranges by default for first-party gateways and that default lets a user point an avatar at http://169.254.169.254/latest/meta-data/ and read IAM credentials out of the response. Redirects are not followed, which matters more here than anywhere: a 302 would let a remote host bounce the request to an internal address AFTER the guard approved the public one. A lowered max_response_bytes, because a hostile host could otherwise stream filler until the process ran out of memory. And retry => 0.",
+
+    "//the-content-type-is-read-from-the-bytes": "Never from the remote header. A host that declares image/png and sends HTML with a script in it would otherwise have those bytes re-served from our origin as image/png, and a browser without nosniff would sniff the real type and run it. SVG is refused outright and will not be supported: it is a scriptable document, so re-serving a stranger's SVG from your origin is stored XSS with no exploit required — and it is not detectable by magic bytes, because XML can begin with a declaration, a comment, a DOCTYPE, a BOM or whitespace.",
+
+    "//svg-out-is-different-from-svg-in": "This plugin GENERATES SVG for initials and REFUSES SVG from third parties. Those are not in tension: one is a document whose entire text this code chose, the other is a file a stranger uploaded. The generated document is still served with a locked-down CSP and nosniff, and toDataUri() is offered because a browser will not run script in an SVG loaded through <img> at all.",
+
+    "//no-icon-sets-no-qr-no-favicon-no-png": "No browser, credit-card or country-flag icon sets: several hundred binary assets with a licence each, carried by every install, when a project can use any icon set — including flag emoji, which need no files. No QR codes: a correct encoder is Reed-Solomon over GF(256) and hundreds of lines that cannot be verified without known-answer vectors, and a wrapper around a library this plugin does not depend on would be untested glue. No favicon fetch: the same open-proxy problem, and the reliable version needs the site's HTML parsed for <link rel=icon>, so /favicon.ico alone would mostly not work. No PNG: rasterising needs GD or Imagick AND an embedded font with its licence; the cost is that many email clients do not render SVG, which the README states rather than solving badly.",
+
+    "commands": [],
+
+    "config": [
+        { "key": "AVATARS_DEFAULT_SIZE", "type": "int", "required": false, "default": 128 },
+        { "key": "AVATARS_DEFAULT_SHAPE", "type": "string", "required": false, "default": "circle" },
+        { "key": "AVATARS_MAX_FETCH_BYTES", "type": "int", "required": false, "default": 2097152 },
+        { "key": "AVATARS_FETCH_TIMEOUT", "type": "int", "required": false, "default": 8 },
+        { "key": "AVATARS_ALLOW_PRIVATE_FETCH", "type": "bool", "required": false, "default": false }
+    ]
+}

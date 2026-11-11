@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/13.2/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         failOnWarning="true"
+         failOnRisky="true"
+         cacheDirectory=".phpunit.cache">
+    <testsuites>
+        <!--
+            One suite. Everything in this plugin is either a pure function of a
+            name or a gateway driven through a fake HTTP client, so there is no
+            database to migrate and nothing an "integration" suite would reach
+            that this one does not.
+
+            What that leaves uncovered is stated in the README rather than
+            papered over: no real HTTP request has ever been made, so the three
+            outbound options are verified by reading the call and by the
+            http-client plugin's own tests, not by a socket.
+        -->
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory suffix=".php">API</directory>
+            <directory suffix=".php">Application</directory>
+            <directory suffix=".php">Domain</directory>
+            <directory suffix=".php">Infrastructure</directory>
+        </include>
+    </source>
+</phpunit>
